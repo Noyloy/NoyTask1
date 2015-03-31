@@ -21,16 +21,20 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // get views
         Button goButton = (Button)findViewById(R.id.go_btn);
         final EditText userInputR = (EditText)findViewById(R.id.user_r_input);
         final EditText userInputC = (EditText)findViewById(R.id.user_c_input);
 
+        // add on click listener
         goButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 int userIntR = -1;
                 int userIntC = -1;
                 boolean conversion_succ = true;
+
+                // verify user input
                 try {
                     userIntR = Integer.parseInt(userInputR.getText().toString());
                     userIntC = Integer.parseInt(userInputC.getText().toString());
@@ -40,6 +44,7 @@ public class MainActivity extends ActionBarActivity {
                     conversion_succ = false;
                 }
 
+                // if user input verified, start RuntimeMatrix activity and pass user input
                 if (conversion_succ) {
                     Intent intent = new Intent(MainActivity.this,RuntimeMatrix.class);
                     intent.putExtra(EXTRA_KEY_ROW,userIntR);
@@ -68,6 +73,8 @@ public class MainActivity extends ActionBarActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+            startActivity(intent);
             return true;
         }
 
