@@ -13,7 +13,7 @@
         </activity>
         <activity
             android:name=".RuntimeMatrix"
-            android:label="@string/title_activity_runtime_matrix">
+            android:label="@string/title_activity_runtime_matrix" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -24,6 +24,10 @@
             android:name=".SettingsActivity"
             android:label="@string/title_activity_settings" >
         </activity>
-    </application>
 
+        <service
+            android:name=".LocalService">
+        </service>
+
+    </application>
 </manifest>

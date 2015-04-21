@@ -1,11 +1,16 @@
 package com.levi.noy.noytask1;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Point;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -19,18 +24,51 @@ import android.widget.GridLayout;
 import android.widget.Toast;
 
 
-public class RuntimeMatrix extends ActionBarActivity {
-    private final static int DEFAULT_MAT_SIZE = 1;
+public class RuntimeMatrix extends ActionBarActivity implements LocalService.ISimulatedPlayerListener {
+    public final static int DEFAULT_MAT_SIZE = 1;
+    public final static String BOARD_SIZE = "SIZE";
+    public final static String BOARD_SIZE_BUNDLE_KEY = "BUNDLE_KEY";
+
+    LocalService mService;
+    boolean isBound =false;
+    private ProgressDialog progress;
+    private ServiceConnection mConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            LocalService.LocalBinder binder = (LocalService.LocalBinder)service;
+            mService = binder.getService();
+            isBound = true;
+        }
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            isBound = false;
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        progress = new ProgressDialog(RuntimeMatrix.this);
+        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progress.setIndeterminate(true);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+
+        // get rows and columns
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+
+        int mat_r = settings.getInt("rows",5);
+        int mat_c = settings.getInt("cols",5);
+
+        // Bind to Service
+        Intent intent = new Intent(this,LocalService.class);
+        Bundle b = new Bundle();
+        b.putInt(BOARD_SIZE,mat_r*mat_c);
+        intent.putExtra(BOARD_SIZE_BUNDLE_KEY,b);
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
 
         // get screen size
         Point size = new Point();
@@ -44,16 +82,9 @@ public class RuntimeMatrix extends ActionBarActivity {
         Log.d("DEBUG","stat height = "+statusBarHeight);
         int actionBarHeight = getActBarHeight();
         Log.d("DEBUG","action height = "+actionBarHeight);
-        screenHeight = screenHeight-(statusBarHeight+actionBarHeight);
+        screenHeight = (int)0.7*(screenHeight-(statusBarHeight+actionBarHeight));
         // generate GridLayout
-        GridLayout runtimeGL = new GridLayout(getApplicationContext());
-
-        // get rows and columns
-        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-
-        int mat_r = settings.getInt("rows",5);
-        int mat_c = settings.getInt("cols",5);
-
+        GridLayout runtimeGL = (GridLayout)findViewById(R.id.runtime_grid);
 
         // specify layout rows and columns
         runtimeGL.setColumnCount(mat_c);
@@ -76,15 +107,37 @@ public class RuntimeMatrix extends ActionBarActivity {
         setContentView(runtimeGL);
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+    }
+
+    @Override
+    public void didDecide(final int place) {
+
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(RuntimeMatrix.this,"I go for place "+place,Toast.LENGTH_SHORT).show();
+                progress.hide();
+            }
+        });
+
+    }
+
     class ButtonListen implements View.OnClickListener {
 
         @Override
         public void onClick(View v) {
             Button b = (Button)v;
-            String buttonText = b.getText().toString();
-            Toast.makeText(RuntimeMatrix.this,getText(R.string.clicked_on)+" "+buttonText,Toast.LENGTH_SHORT).show();
+            progress.show();
+            mService.makeMove(RuntimeMatrix.this);
+            //String buttonText = b.getText().toString();
+            //Toast.makeText(RuntimeMatrix.this,getText(R.string.clicked_on)+" "+buttonText,Toast.LENGTH_SHORT).show();
         }
     }
+
     public int getActBarHeight(){
         int actionBarHeight = 0;
         TypedValue tv = new TypedValue();
