@@ -20,7 +20,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.DecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
 import android.widget.Button;
@@ -36,8 +40,8 @@ public class RuntimeMatrix extends ActionBarActivity implements LocalService.ISi
     public final static int DEFAULT_MAT_SIZE = 1;
     public final static String BOARD_SIZE = "SIZE";
     public final static String BOARD_SIZE_BUNDLE_KEY = "BUNDLE_KEY";
-    public final float BOARD_WEIGHT = 0.7f;
-    public final float STAT_WEIGHT = 0.3f;
+    public final float BOARD_WEIGHT = 0.8f;
+    public final float STAT_WEIGHT = 0.2f;
 
     // SERVICE
     LocalService mService;
@@ -61,14 +65,61 @@ public class RuntimeMatrix extends ActionBarActivity implements LocalService.ISi
     LinearLayout runtimeLL,runtimeLLChild;
     ImageView runtimeIV;
     GridLayout runtimeGL;
+    TextView left,right;
 
     // ANIMATOR
     RotateAnimation anim;
-
+    Animation fadeIn;
+    Animation fadeOut;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        left = new TextView(RuntimeMatrix.this);
+        right = new TextView(RuntimeMatrix.this);
+        left.setTextSize(26);
+        right.setTextSize(26);
+        fadeIn = new AlphaAnimation(0,1);
+        fadeIn.setInterpolator(new DecelerateInterpolator()); //add this
+        fadeIn.setDuration(500);
+        fadeIn.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                runtimeIV.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                runtimeIV.startAnimation(anim);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        fadeOut = new AlphaAnimation(1,0);
+        fadeOut.setInterpolator(new AccelerateInterpolator()); //and this
+        fadeOut.setStartOffset(0);
+        fadeOut.setDuration(500);
+        fadeOut.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                runtimeIV.setVisibility(View.INVISIBLE);
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+
         //progress = new ProgressDialog(RuntimeMatrix.this);
         //progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         //progress.setIndeterminate(true);
@@ -77,7 +128,11 @@ public class RuntimeMatrix extends ActionBarActivity implements LocalService.ISi
     @Override
     protected void onStart() {
         super.onStart();
-
+        if(runtimeLL != null){
+            runtimeLL.removeAllViews();
+            runtimeLLChild.removeAllViews();
+            runtimeGL.removeAllViews();
+        }
         // get rows and columns
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
@@ -141,15 +196,16 @@ public class RuntimeMatrix extends ActionBarActivity implements LocalService.ISi
         runtimeIV.setMinimumHeight((int)(STAT_WEIGHT*screenHeight));
         runtimeIV.setMinimumWidth((int)(STAT_WEIGHT*screenHeight));
         runtimeIV.setLayoutParams(lp);
+        runtimeIV.setVisibility(View.INVISIBLE);
         // animation properties
         anim = new RotateAnimation(0f,360f,screenWidth/6,((STAT_WEIGHT*screenHeight))/2);
         anim.setInterpolator(new LinearInterpolator());
         anim.setRepeatCount(Animation.INFINITE);
-        anim.setDuration(700);
+        anim.setDuration(2450);
 
-        TextView left = new TextView(RuntimeMatrix.this);
+
+        left.setText("Your Turn");
         left.setLayoutParams(lp);
-        TextView right = new TextView(RuntimeMatrix.this);
         right.setLayoutParams(lp);
         // add left textview
         runtimeLLChild.addView(left);
@@ -183,9 +239,13 @@ public class RuntimeMatrix extends ActionBarActivity implements LocalService.ISi
         this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
+
                 Toast.makeText(RuntimeMatrix.this,"I go for place "+place,Toast.LENGTH_SHORT).show();
+                runtimeIV.clearAnimation();
+                runtimeIV.startAnimation(fadeOut);
+                left.setText("Your Turn");
+                right.setText("");
                 //progress.hide();
-                runtimeIV.setAnimation(null);
                 otherThinks=false;
             }
         });
@@ -198,7 +258,9 @@ public class RuntimeMatrix extends ActionBarActivity implements LocalService.ISi
         public void onClick(View v) {
             if (!otherThinks) {
                 Button b = (Button) v;
-                runtimeIV.startAnimation(anim);
+                runtimeIV.startAnimation(fadeIn);
+                left.setText("Phones Turn");
+                right.setText("Thinking...");
                 //progress.show();
                 otherThinks = true;
                 mService.makeMove(RuntimeMatrix.this);

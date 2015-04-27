@@ -1,10 +1,10 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" xmlns:robobunny="http://robobunny.com">
 
     <PreferenceCategory android:title="Rows">
-        <SeekBarPreference android:key="rows" android:title="" android:summary="Adjust number of rows" android:defaultValue="5" android:max="7" robobunny:min="1" robobunny:unitsLeft="" robobunny:unitsRight="%"/>
+        <SeekBarPreference android:key="rows" android:title="" android:summary="Adjust number of rows" android:defaultValue="5" android:max="6" robobunny:min="1" robobunny:unitsLeft="" robobunny:unitsRight="%"/>
     </PreferenceCategory>
     <PreferenceCategory android:title="Columns">
-        <SeekBarPreference android:key="cols" android:title="" android:summary="Adjust number of rows" android:defaultValue="5" android:max="7" robobunny:min="1" robobunny:unitsLeft="" robobunny:unitsRight="%"/>
+        <SeekBarPreference android:key="cols" android:title="" android:summary="Adjust number of rows" android:defaultValue="5" android:max="6" robobunny:min="1" robobunny:unitsLeft="" robobunny:unitsRight="%"/>
     </PreferenceCategory>
 
 

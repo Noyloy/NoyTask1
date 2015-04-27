@@ -21,7 +21,7 @@ public class SeekBarPreference extends Preference implements OnSeekBarChangeList
     private static final String APPLICATIONNS="http://robobunny.com";
     private static final int DEFAULT_VALUE = 5;
 
-    private int mMaxValue      = 7;
+    private int mMaxValue      = 6;
     private int mMinValue      = 1;
     private int mInterval      = 1;
     private int mCurrentValue;
