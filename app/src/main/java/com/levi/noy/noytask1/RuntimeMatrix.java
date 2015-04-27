@@ -1,5 +1,6 @@
 package com.levi.noy.noytask1;
 
+import android.animation.Animator;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
@@ -19,19 +20,30 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.RotateAnimation;
 import android.widget.Button;
 import android.widget.GridLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 
 public class RuntimeMatrix extends ActionBarActivity implements LocalService.ISimulatedPlayerListener {
+    // CONSTANTS
     public final static int DEFAULT_MAT_SIZE = 1;
     public final static String BOARD_SIZE = "SIZE";
     public final static String BOARD_SIZE_BUNDLE_KEY = "BUNDLE_KEY";
+    public final float BOARD_WEIGHT = 0.7f;
+    public final float STAT_WEIGHT = 0.3f;
 
+    // SERVICE
     LocalService mService;
     boolean isBound =false;
-    private ProgressDialog progress;
+    boolean otherThinks = false;
+    //private ProgressDialog progress;
     private ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -45,12 +57,21 @@ public class RuntimeMatrix extends ActionBarActivity implements LocalService.ISi
         }
     };
 
+    // VIEWS AND LAYOUTS
+    LinearLayout runtimeLL,runtimeLLChild;
+    ImageView runtimeIV;
+    GridLayout runtimeGL;
+
+    // ANIMATOR
+    RotateAnimation anim;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        progress = new ProgressDialog(RuntimeMatrix.this);
-        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        progress.setIndeterminate(true);
+        //progress = new ProgressDialog(RuntimeMatrix.this);
+        //progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        //progress.setIndeterminate(true);
     }
 
     @Override
@@ -82,35 +103,78 @@ public class RuntimeMatrix extends ActionBarActivity implements LocalService.ISi
         Log.d("DEBUG","stat height = "+statusBarHeight);
         int actionBarHeight = getActBarHeight();
         Log.d("DEBUG","action height = "+actionBarHeight);
-        screenHeight = (int)0.7*(screenHeight-(statusBarHeight+actionBarHeight));
+        screenHeight = screenHeight-(statusBarHeight+actionBarHeight);
+
+        // generate LinearLayout
+        runtimeLL = new LinearLayout(RuntimeMatrix.this);
+
+        LinearLayout.LayoutParams linParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        runtimeLL.setLayoutParams(linParams);
+        runtimeLL.setOrientation(LinearLayout.VERTICAL);
+
         // generate GridLayout
-        GridLayout runtimeGL = (GridLayout)findViewById(R.id.runtime_grid);
+        runtimeGL = new GridLayout(RuntimeMatrix.this);
 
         // specify layout rows and columns
         runtimeGL.setColumnCount(mat_c);
         runtimeGL.setRowCount(mat_r);
-        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        params.width=screenWidth;
-        params.height=screenHeight;
+        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(screenWidth, (int)(BOARD_WEIGHT*screenHeight));
         runtimeGL.setLayoutParams(params);
 
         // create and insert buttons
         for (int i = 0; i<mat_r*mat_c;i++){
             Button currentB = new Button(getApplicationContext());
             currentB.setText(i+"");
-            currentB.setLayoutParams(new ViewGroup.LayoutParams(screenWidth/mat_c,screenHeight/mat_r));
+            currentB.setLayoutParams(new ViewGroup.LayoutParams(screenWidth/mat_c,params.height/mat_r));
             currentB.setOnClickListener(new ButtonListen());
             runtimeGL.addView(currentB);
         }
 
+        // generate LinearLayout
+        runtimeLLChild = new LinearLayout(RuntimeMatrix.this);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, (int)(STAT_WEIGHT*screenHeight));
+        lp.weight = 1;
+        LinearLayout.LayoutParams linParamsChild = new LinearLayout.LayoutParams(screenWidth,(int)(STAT_WEIGHT*screenHeight));
+        // generate ImageView
+        runtimeIV = new ImageView(RuntimeMatrix.this);
+        runtimeIV.setImageResource(R.drawable.hour_glass);
+        runtimeIV.setMinimumHeight((int)(STAT_WEIGHT*screenHeight));
+        runtimeIV.setMinimumWidth((int)(STAT_WEIGHT*screenHeight));
+        runtimeIV.setLayoutParams(lp);
+        // animation properties
+        anim = new RotateAnimation(0f,360f,screenWidth/6,((STAT_WEIGHT*screenHeight))/2);
+        anim.setInterpolator(new LinearInterpolator());
+        anim.setRepeatCount(Animation.INFINITE);
+        anim.setDuration(700);
+
+        TextView left = new TextView(RuntimeMatrix.this);
+        left.setLayoutParams(lp);
+        TextView right = new TextView(RuntimeMatrix.this);
+        right.setLayoutParams(lp);
+        // add left textview
+        runtimeLLChild.addView(left);
+        // add image view to child layout
+        runtimeLLChild.addView(runtimeIV);
+        // add right textview
+        runtimeLLChild.addView(right);
+        runtimeLLChild.setLayoutParams(linParamsChild);
+
+        // add GL to Main LinearLay
+        runtimeLL.addView(runtimeGL);
+        // add child layout to LinearLay
+        runtimeLL.addView(runtimeLLChild);
         // apply the view to the screen
-        setContentView(runtimeGL);
+        setContentView(runtimeLL);
+
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-
+        if (isBound) {
+            unbindService(mConnection);
+            isBound = false;
+        }
     }
 
     @Override
@@ -120,7 +184,9 @@ public class RuntimeMatrix extends ActionBarActivity implements LocalService.ISi
             @Override
             public void run() {
                 Toast.makeText(RuntimeMatrix.this,"I go for place "+place,Toast.LENGTH_SHORT).show();
-                progress.hide();
+                //progress.hide();
+                runtimeIV.setAnimation(null);
+                otherThinks=false;
             }
         });
 
@@ -130,11 +196,15 @@ public class RuntimeMatrix extends ActionBarActivity implements LocalService.ISi
 
         @Override
         public void onClick(View v) {
-            Button b = (Button)v;
-            progress.show();
-            mService.makeMove(RuntimeMatrix.this);
-            //String buttonText = b.getText().toString();
-            //Toast.makeText(RuntimeMatrix.this,getText(R.string.clicked_on)+" "+buttonText,Toast.LENGTH_SHORT).show();
+            if (!otherThinks) {
+                Button b = (Button) v;
+                runtimeIV.startAnimation(anim);
+                //progress.show();
+                otherThinks = true;
+                mService.makeMove(RuntimeMatrix.this);
+                //String buttonText = b.getText().toString();
+                //Toast.makeText(RuntimeMatrix.this,getText(R.string.clicked_on)+" "+buttonText,Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
