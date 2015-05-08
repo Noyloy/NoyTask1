@@ -34,6 +34,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.Random;
+
 
 public class RuntimeMatrix extends ActionBarActivity implements LocalService.ISimulatedPlayerListener {
     // CONSTANTS
@@ -179,6 +181,7 @@ public class RuntimeMatrix extends ActionBarActivity implements LocalService.ISi
         // create and insert buttons
         for (int i = 0; i<mat_r*mat_c;i++){
             Button currentB = new Button(getApplicationContext());
+            currentB.setBackground(getResources().getDrawable( R.drawable.btn_all ));
             currentB.setText(i+"");
             currentB.setLayoutParams(new ViewGroup.LayoutParams(screenWidth/mat_c,params.height/mat_r));
             currentB.setOnClickListener(new ButtonListen());
@@ -258,6 +261,10 @@ public class RuntimeMatrix extends ActionBarActivity implements LocalService.ISi
         public void onClick(View v) {
             if (!otherThinks) {
                 Button b = (Button) v;
+                b.setBackground(getResources().getDrawable( R.drawable.btn_miss ));
+                b.setBackground(getResources().getDrawable( R.drawable.btn_hit ));
+                b.setEnabled(false);
+
                 runtimeIV.startAnimation(fadeIn);
                 left.setText("Phones Turn");
                 right.setText("Thinking...");
